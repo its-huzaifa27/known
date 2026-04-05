@@ -1,0 +1,326 @@
+first create a npm init to initialize the project then fill all the things 
+>second thing we need to create gitignore file 
+>and add /node_module and .env
+
+>>>after 22 minute  i forgot the book on the home so we are going to write all the things here 
+>>next thing we are going to accept body from the req 
+>to do that first we will test by just passing an contact dat on post req in body in thunder client
+>this will not sent the data to the server bcz firstly we need to set an middleware
+>to set it we need to use middleware for json and express provide it
+>so in the server.js we will write app.use(express.json()) 
+>now the server got the body req 
+>by this we can acept the contact data from the user 
+>but if we send empty body from the thunder client it also accept and work but we neeed t ospecify the error handling in these cases to address this issue we need to destructure the body data
+>   console.log("the request body is:",req.body)
+    const {name,email,phone} = req.body;
+    if(!name||!email||!phone){
+        res.status(400)
+        throw new Error("all the fields are mendatory");
+    }
+>>now the response of error is in the form of html not json  and if we need to change it to the json form we neeed to make a custoum middleware which accept response and transform the response in to json
+>to do that we need to make a custom middleware for that we will create a file of middleware
+>in it we will have errorHandler.js in that we need to write 
+>firstly make an arrow function that take diff things
+>const errorHandler = (err,req,res,next) =>{
+    const statusCode = res.statusCode ? res.statusCode:500;//means first take the response statusCode and if it is not present then proceed with 500 as a statusCode
+>after that we will catch the response like 
+>res.json({message:err.message,stackTrace:err.satck});
+}
+>and to use this error custoum middlewarewe need to use it in the server.js 
+>like this app.use(exported errorvariable)
+>after that if we send an blank req with post method it will respond the error which we have specified 
+>and also the stack thing that we are also passing 
+>after that we add title not found 
+>after that we need to add diff things like validation error and all using switch cases t ocatch all the error 
+>and in cases we need to specify the diff cases like 400 401 and 403 and 404 and 500
+>so the best practice is to make an constant and from there import all the error cases 
+>like this
+>exports.constants = {
+    VALIDATION_ERROR: 400,
+    UNAUTHORIZED: 401,
+    FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    SERVER_ERROR: 500
+}
+>now we have created the error handling thing and now we can throw our error in controller middle ware whenever it is required
+>after that when we are using mongowe have to deal with the promise and to resolve it we need to use async function everywhere and also use try and catch block
+>but there is an better way to do that by creating a middleware which is async handler which is going to handle our exception inside the async handler route and after that we will pass them into the errorhandler to handle that so lets create it 
+>to do that first we need to npm i express-async-handler    
+>this will insatll it and where we want to use it we will import it and use inplace of async and it will autmatically handle the try catch block 
+
+
+>>>>>>>lets set the mongo db 
+>to do this just go to mongo db website and craete a cluster and addd a collection as database name and user and after that pick the connection string 
+>and for the visibilty of data base in the vscode use the vscode for mongo and use it 
+>>but remeber the main thing is to connect the mogo through the .env and test it in the config file that the database is connected or not 
+>>to do this we will first link the string in the .env file after that we create a config folder
+>in order to connect with mongo databse we need mongoose which is object model design schema which helps us to communicate with the mongodb database
+>after that create dbConnection.js and npm i mongoose  and import it then connectDb arrow function 
+>>in it use try and catch block 
+>in try block const connect = await mongoose.connect(process.env.CONNECTION_STRING);
+>this line means trying to connect to mongo db using the .env string 
+>and if it completes we are going to use the console to print thatit connected 
+> console.log("connected to mongo:",
+            connect.connection.host,
+            connect.connection.name
+        )
+
+and in catch block just do the failed and exit the process 
+>catch (err) {
+        console.log("connection failed");
+        process.exit(1);
+    }
+
+>next thing is to create schema for the contact 
+>to do this first we need to create a folder named models
+>in it create contactModels.js and import the mongoose 
+>after that create a const variable and make it like this 
+>const contactSchema = mongoose.Schema({
+    name:{
+        type:String,//type of the field ike string or int
+        required : [true,"please enter the name"]//is it required ??
+    }
+})
+same for the email and phone no
+>and also add timestamp :true //to store the time and data automatically at the time of data entry 
+>after that export it as contact
+and require or import it in the controller file for storing the real data 
+>and where we need the Contact schema which we have imported we need to use it and a method to connect the schema and api
+>for example if we useit in the getContact api
+>we need to use the 
+>const contact =Contact.find();
+>res.status(200).json(contact)
+> it will return nthing bcz the data base is empty right now and we donot have any contact
+> now we create a contact using the post api 
+> to create that everything will be same just in place of find we will use the .create method 
+>which take a object means the thing that need to be stored in the database here we will use the req.body.name and all but we have destrudred it in name and all so we will use name and all 
+>now if we make it then the data of contact will be stored and work properly 
+>now next thing we are going to work for getContact with id api and make that if we ask contact of some perticular id then it gives if there is no contact present related to that perticular id then we will throw an error method name is .findById(req.params.id)
+>and remember we have to work with the async and await thing alongside bcz the api calls take time  
+>>after that we will work on update through the api 
+>for that first we need to find the perticular id through same method and after finding we will update it 
+>to do  that we need to use that first find the id with same step then after that create a const updatedContact and do like this 
+> const updatedContact = await Contact.findByIdAndUpdate(
+        req.params.id,//giving previous id 
+        req.body,//sending the new updated one to the db
+        {new:true}//to make sure 
+    )
+>same for the delete and the method is .findByIdAndDelete(req.params.id);
+>>>>here we have completed the crud operation
+
+
+>>>>lets handle the authentication
+>step1 craete a route and create sample route for the end points 
+>authentication where we give some endpointsto the user whichthey can use to register and login and use the contact 
+>so to do the authentication first we need to create a endpoint of users same as the contact like this in server.js
+>app.use("/api/users",require("the path of the router file "));
+>after that create a router file  and in router file firstly require express then do the
+>const router = express.Router();
+>after that start creating router for diff end point 
+>like this 
+>router.post("endpoint name (registerUser)",(req,res) => {
+    res.json({message:"register the user"});
+}) //register end point now create same as login and current user 
+>the current user req method should be get bcz it fetch the current user data 
+
+>>>>>>>>>>>>>>step2 
+>after creation of end point next things is to create controller.js of that thing and destrucutre the route thing 
+>means just following the best structure for example for the register user 
+// desc  registerUser
+//route POST/api/contact
+//access public
+const getContacts =asyncHandler(async(req,res) => {
+    res.json({message:"register the user"});
+}) 
+
+same for the login 
+>but for current user info the access should be private and 
+>now we can use in router file router.post("endpoint name (registerUser)",registerUser) by importing it from the conteroller //so this is basically following best strucutre of file we can add it in a single server file but that would be too hard to mantain
+>>>>>>now we have to create functionality to register user for that we have to define the schema for the user through model so create userModel.js 
+>in it first require mongoose 
+>after that 
+>const userSchema = mongoose.schema({
+    define diff element for the user register 
+    //for example what value we need to register user or to deal with user 
+    //like user name which have the type of string with required field
+    //second thing email with string and required and also unique for uniquness of the email 
+    ////third thing will be password of string
+
+}{
+    timestamps:true //for time of entry
+})
+>>>now we have define the schema next thing is we need t owrite funtionality in controller bcz abhi humne just test kiya ke endpoint hit ho rha h 
+>now lets write functionality 
+>for example first section is to registerUser means making new user 
+>so in registerUser we first collect the name email and password from req.body 
+>after that we check that if these three present if not then show res.status(400) and throw new error("error")
+>so now we have checked that user has enterd the all the field 
+>after that we will check that the data which is coming when user want to create a user or his login thing is already present in the system or not 
+>to do this we will create a const userAvailable = await usermodelvariable(bcz hum database me check karenge ke iss email ka user hai ya nhi )
+>so 
+>const userAvailable = await User.findOne({email})
+>if(userAvailable){
+    throw new error 
+}  
+>after that if we dont find any user then we store the new  user info 
+>but to store that we cannot store the password in raw form we need to store it using hash 
+>to hash the password we need to use library called bcrypt 
+>so lets import bcrypt library   
+>after importing we are going to create const of hashPassword to store the password in hash form 
+>to store it we need to use bcrypt.hash(password ,10)
+>the number 10 is the salt rounds (also called cost factor). It controls how many times the hashing process runs, making the password harder to crack by increasing computation time.
+>use await for bcrypt.hash() bcz it returns promise 
+>after that we create the user 
+>by const user = await User.creat({
+    username,
+    email,
+    password:hashPassword
+});
+>after that if user is created we return in res.json the _id and email of the user not password
+>and if it is not created we throw a new error
+>thats how we create a user
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>jwt<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
+>>>>>>>>>>>>>>>>>>>>>>>>>> now using this user we will login using jwt jsonwebtoken 
+>jsonwebtoken consist of three parts if we go to offcial  there is three diff thing which make the jwt 
+>the 1st eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 it means the header of the jwt {
+  "alg": "HS256",
+  "typ": "JWT"
+}
+>the 2nd eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0 it is playload means {
+  "sub": "1234567890",
+  "name": "John Doe",
+  "admin": true,
+  "iat": 1516239022
+}
+>the 3rd KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30 it means jwt signature verification a-string-secret-at-least-256-bits-long
+>to use jwt we need to install jsonwebtoken package 
+>after that import it 
+>and go to loginUser in the controller 
+>and we have to o that when client enter email and pass we have to match it the one stored in the data base to do that 
+>when user enter email and pass trying to login we need to fetch it and compare it 
+>const {email,password} = req.body;
+>after that we check is user entered the email and pass before clicking to signin 
+>so we do the same inthe above section but just for email and pass if not entered then throw an error 
+>and if the email and pass is present then we check the database 
+>for that we do const user = await User.findOne({email})
+>if(user && (await bcrypt.compare(password //this pass means the one stored in the database,user.password//user.password means one that is enetered by user during login))){
+//if the password matches with the user.password then we respond with access-token
+//first create a access token 
+const accessToken = jwt.sign(
+    //first thing that this function take is pay load so
+    user :{
+        userName:user.userName,
+        email:user.email,
+        id :user.id
+    }
+,//2nd thing that it takes accestoken secret so we will provide uniwue access token from .env so in .env define access-token
+process.env.access-token,
+//3rd thing is to pass is the expiry time 
+{expiresin:"1m"}
+)
+res.status(200).json(accessToken); 
+}
+else{
+    res.status(401);
+    throw new error("password is not valid");
+}
+>>that how we get the acccess token 
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>making the route to private <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+>no we are going to make the route to private so only the authorized user can access them 
+>and enforce validation on them so only the authenticated user can access them 
+>so go to usercontroller and in currentuser info we do that to access this the user needs to provide the access token 
+>so firstly we need to make an middleware that validate the access token which user send to the req 
+>so the user take the token and send to the bearir means we are doing this to test the validation 
+>to validate it we first make an middleware name validateTokenHandler
+>and same as errorHandler middleware we also import the jwt and asyncHandler from their respective lib 
+>after that create a function like the same in the errorHandler
+>like this 
+>const validateToken = asyncHandler(async (req,res,next) => {
+    //first create a token variable 
+    let token;
+    //after that whenever the user sends an req the access token is passedthrough the header section of req with auth field either we pass in the auth section or we can create a authorization in the header in the header we create authorization and make it equal to Bearer 
+    let authHeader = req.headers.Authorization || req.headers.Authorization
+    //check if authheader is present and also check if it starts with Bearer  
+    if(authHeader && authHeader.startsWith("Bearer")){
+        //if it is starts with Bearer then take the token and make the authHeader aplit the array with " " so the first index means [0] will be "Bearer" and 2nd index [1] will be "the acces token "
+        token = authHeader.split(" ")[1];//that means the token = the access token generated by login
+        //next verify it so to verify it we do 
+        jwt.verify(token,process.env.ACCESS_TOKEN,(err,decoded) => {
+            if (err) {
+                res.status(401)
+                throw new error("user is not authorized")
+            }
+            req.user = decoded.user;
+        })
+        
+
+    }
+})
+after that export the validate token to use it in the  
+export default validateToken ;
+
+>then go to user route 
+>and in current user use this validateToken like this 
+>router.get("/currentUser", validateToken ,currentUser)
+
+
+>>>>>>>>>>>>>>>>>fetch the data from mongodb and present as response <<<<<<<<<<
+>to do that we need to send the req.user in the response 
+>so the thing works as that without the access token anyone will not be able to fetch the data of currentUser path amd when someone does it with the access token then we will send the user data in response
+>so we just need to change the res.json({message :"current user info"}) to res.json(req.user)
+>>>>>>>>>>>>>>>>>>after that we need to make all the contact route protected so only logged in user can access those contact and make changes or read in those contact <<<<<<<<<<<<<<<
+>for that we need to update the contact model schema and user id 
+>this id is ther user id which is creating contact 
+ >so in contactModel 
+ >we do const contactSchema = mongoose.Schema({
+    user_id: {
+        type: mongoose.schema.Types.objectid // bcz this id is created in mongodb
+        required : true
+        ref :"user" //refrence 
+    }
+    name: {
+        type: String,
+        required: [true, "please enter the name"]
+    },
+    email: {
+        type: String,
+        required: [true, "please enter the name"]
+    },
+    phone: {
+        type: String,
+        required: [true, "please enter the name"]
+    }
+
+    },
+    {
+        timestamps: true
+    }
+)
+
+>after that we need to convert the contact route from public to private 
+>in contact route to we need to use validateToken to make the route private same as currentuser route 
+>but here we have too many route so need to just add this line 
+>router.use(validateToken); and if you have some of te route then we cam use router.get("/currentUser",validateToken, currentUser) this method 
+
+>>now in contactcontroller lets make use of user id which we have changed in the contactmodel schema to achieve that only user access thier contact not other
+>and in contactcontroller we need to find all the contact related to the user who has logged in 
+>to find it where we are getting the contact by get method we have used the .find method 
+>there we need to use const contact = await Contact.find({user_id : req.user.id//(means the id which we have passed in the req)});//so it will fetch me the contact of the user which is logged in 
+>and in thunder client we will first use get method to get the contact but we dont have any contact till now in the user which we have logged in so first we create by post method of contact after that we can fetch all the contact using get req 
+>>but increation of new cotact related to user we are passing name email and phone so we are going to provide it but we also need to send the user id in the createcontact bcz it helps to identify the contact related to that user id 
+>like this const contact = Contact.create({
+        name,
+        email,
+        phone,
+        user_id :req.user.id //we are using middle ware where the user is decoded and all property of user like id which we need here is fetched and used 
+    })
+>final thing is to change the remove() to deleteone({req.params.id}) to delete only one contact not all 
+
+>>>so here the the user file means the usersController user model and user route is the functionality of the registering and logging user like 1st step of the web 
+>>>>>and contact is like nestedthing of user means unless we are logged in or register we cannot create any contact or read them or update them or delete them
+>>>here we have completed the video 
