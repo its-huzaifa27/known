@@ -4,7 +4,7 @@ first create a npm init to initialize the project then fill all the things
 
 >>>after 22 minute  i forgot the book on the home so we are going to write all the things here 
 >>next thing we are going to accept body from the req 
->to do that first we will test by just passing an contact dat on post req in body in thunder client
+>to do that first we will test by just passing an contact on post req in body in thunder client
 >this will not sent the data to the server bcz firstly we need to set an middleware
 >to set it we need to use middleware for json and express provide it
 >so in the server.js we will write app.use(express.json()) 
