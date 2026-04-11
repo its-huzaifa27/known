@@ -9,6 +9,32 @@ function MainArea() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Create Contact Form State
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  const handleCreateContact = async (e) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+    setSubmitError(null);
+
+    try {
+      await axios.post('http://localhost:5000/api/contacts/', formData, {
+        headers: { Authorization: "Bearer bypass_test_token_123" }
+      });
+      // Clear form on success
+      setFormData({ name: '', email: '', phone: '' });
+      // Redirect back to My Contacts to implicitly trigger GET
+      setActiveView('MyContacts');
+    } catch (err) {
+      console.error(err);
+      setSubmitError(err.response?.data?.message || "Failed to create contact");
+    } finally {
+        setSubmitLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeView === 'MyContacts') {
       setLoading(true);
@@ -116,6 +142,80 @@ function MainArea() {
               )}
             </div>
           )}
+        </div>
+      ) : activeView === 'CreateContact' ? (
+        <div className="h-full relative z-10 flex items-start justify-center pt-10">
+            <div className="bg-white p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] w-full max-w-xl relative overflow-hidden border border-emerald-50">
+                <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                
+                <h2 className="text-3xl font-extrabold text-slate-800 mb-2">Create New Contact</h2>
+                <p className="text-slate-500 mb-8">Add a new connection to your address book securely.</p>
+                
+                {submitError && (
+                  <div className="bg-rose-50 text-rose-600 p-4 rounded-xl border border-rose-100 mb-6 text-sm font-medium flex items-center gap-2">
+                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {submitError}
+                  </div>
+                )}
+                
+                <form onSubmit={handleCreateContact} className="space-y-6">
+                    <div>
+                        <label className="block text-xs font-bold tracking-widest text-slate-500 mb-2 uppercase">Full Name</label>
+                        <input 
+                            type="text" 
+                            required 
+                            placeholder="e.g. Jane Doe"
+                            value={formData.name}
+                            onChange={e => setFormData({...formData, name: e.target.value})}
+                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold tracking-widest text-slate-500 mb-2 uppercase">Email Address</label>
+                        <input 
+                            type="email" 
+                            required 
+                            placeholder="jane@example.com"
+                            value={formData.email}
+                            onChange={e => setFormData({...formData, email: e.target.value})}
+                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold tracking-widest text-slate-500 mb-2 uppercase">Phone Number</label>
+                        <input 
+                            type="tel" 
+                            required 
+                            placeholder="+1 (555) 000-0000"
+                            value={formData.phone}
+                            onChange={e => setFormData({...formData, phone: e.target.value})}
+                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
+                        />
+                    </div>
+                    
+                    <div className="pt-6 flex gap-4">
+                        <button 
+                            type="button" 
+                            onClick={() => setActiveView('MyContacts')}
+                            disabled={submitLoading}
+                            className="flex-1 py-3.5 px-4 bg-white border-2 border-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-200 hover:text-slate-800 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={submitLoading}
+                            className="flex-[2] py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-600 shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_25px_rgba(16,185,129,0.4)] transform transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
+                        >
+                            {submitLoading ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                                "Save Contact"
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] h-full flex flex-col items-center justify-center text-slate-400 relative z-10">
