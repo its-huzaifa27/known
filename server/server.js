@@ -1,5 +1,6 @@
 import { configDotenv } from "dotenv";
 import express from "express";
+import cors from "cors";
 import contactRoute from "./routes/contactRoutes.js";
 import usersRoute from "./routes/usersRouter.js";
 import { errorHnadler } from "./middlewares/errorHandler.js";
@@ -16,6 +17,7 @@ const startServer = async() => {
         console.log(process.env.CONNECTION_STRING)
         await connectDb();
         //mandatory to read the body thing in json withoit it it wonnot read anything from the req 
+        app.use(cors())
         app.use(express.json())
         app.use(errorHnadler);
 

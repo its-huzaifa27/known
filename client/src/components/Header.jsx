@@ -2,23 +2,29 @@ import React from 'react';
 
 function Header() {
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-green-950 border-b-4 border-white shadow-sm z-10 w-full">
+    <header className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-emerald-950 via-teal-950 to-green-950 shadow-md border-b-2 border-emerald-800/40 z-10 w-full relative">
+      <div className="absolute inset-0 bg-black/10 backdrop-blur-sm pointer-events-none"></div>
+      
       {/* Left: Logo and App Name */}
-      <div className="flex items-center gap-2 text-2xl font-bold text-[#025035]">
-        <div className="w-6 h-6 bg-[#025035] rounded relative after:content-[''] after:absolute after:top-[6px] after:left-[6px] after:w-3 after:h-3 after:bg-white after:rounded-full"></div>
+      <div className="flex items-center gap-3 text-2xl font-extrabold text-white tracking-wide relative z-10 cursor-pointer">
+        <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-lg shadow-lg flex items-center justify-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-white/20 transform rotate-45 translate-y-full group-hover:translate-y-[-150%] transition-transform duration-700"></div>
+          <div className="w-3 h-3 bg-white rounded-full shadow-inner"></div>
+        </div>
         known
       </div>
 
       {/* Right: User Info and Logout */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 relative z-10">
         <div className="flex flex-col text-right">
-          <span className="text-sm font-semibold text-slate-700">John Doe</span>
-          <span className="text-xs text-slate-500">User</span>
+          <span className="text-sm font-bold text-white tracking-wide">My Account</span>
+          <span className="text-[10px] text-emerald-300 font-medium tracking-wider uppercase">Active User</span>
         </div>
-        <div className="w-10 h-10 bg-[#025035] text-white rounded-full flex items-center justify-center font-bold">
+        <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-teal-500 text-white rounded-xl shadow-[0_0_15px_rgba(52,211,153,0.3)] ring-2 ring-white/10 flex items-center justify-center font-bold text-base cursor-pointer transform transition-transform hover:scale-105 active:scale-95">
           JD
         </div>
-        <button className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-md hover:bg-red-50 transition-colors ml-2">
+        <div className="h-8 w-px bg-emerald-700/50 mx-1"></div>
+        <button className="px-5 py-2 text-sm font-semibold text-rose-300 border border-rose-300/30 rounded-xl hover:bg-rose-500/10 hover:border-rose-400 hover:text-rose-200 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all duration-300">
           Logout
         </button>
       </div>
