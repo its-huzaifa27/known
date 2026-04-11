@@ -129,7 +129,7 @@ and require or import it in the controller file for storing the real data
 // desc  registerUser
 //route POST/api/contact
 //access public
-const getContacts =asyncHandler(async(req,res) => {
+const registerUser =asyncHandler(async(req,res) => {
     res.json({message:"register the user"});
 }) 
 
@@ -149,7 +149,7 @@ same for the login
 }{
     timestamps:true //for time of entry
 })
->>>now we have define the schema next thing is we need t owrite funtionality in controller bcz abhi humne just test kiya ke endpoint hit ho rha h 
+>>>now we have define the schema next thing is we need to write funtionality in controller bcz abhi humne just test kiya ke endpoint hit ho rha h 
 >now lets write functionality 
 >for example first section is to registerUser means making new user 
 >so in registerUser we first collect the name email and password from req.body 
@@ -199,14 +199,16 @@ same for the login
 >to use jwt we need to install jsonwebtoken package 
 >after that import it 
 >and go to loginUser in the controller 
->and we have to o that when client enter email and pass we have to match it the one stored in the data base to do that 
+>and we have to do that when client enter email and pass we have to match it the one stored in the data base to do that 
 >when user enter email and pass trying to login we need to fetch it and compare it 
 >const {email,password} = req.body;
 >after that we check is user entered the email and pass before clicking to signin 
 >so we do the same inthe above section but just for email and pass if not entered then throw an error 
 >and if the email and pass is present then we check the database 
 >for that we do const user = await User.findOne({email})
->if(user && (await bcrypt.compare(password //this pass means the one stored in the database,user.password//user.password means one that is enetered by user during login))){
+>if(user && (await bcrypt.compare(password //this pass means the one stored in the database,
+user.password//user.password means one that is enetered by user during login
+))){
 //if the password matches with the user.password then we respond with access-token
 //first create a access token 
 const accessToken = jwt.sign(
@@ -271,7 +273,7 @@ export default validateToken ;
 
 >>>>>>>>>>>>>>>>>fetch the data from mongodb and present as response <<<<<<<<<<
 >to do that we need to send the req.user in the response 
->so the thing works as that without the access token anyone will not be able to fetch the data of currentUser path amd when someone does it with the access token then we will send the user data in response
+>so the thing works as that without the access token anyone will not be able to fetch the data of currentUser path and when someone does it with the access token then we will send the user data in response
 >so we just need to change the res.json({message :"current user info"}) to res.json(req.user)
 >>>>>>>>>>>>>>>>>>after that we need to make all the contact route protected so only logged in user can access those contact and make changes or read in those contact <<<<<<<<<<<<<<<
 >for that we need to update the contact model schema and user id 

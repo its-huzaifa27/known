@@ -1,8 +1,10 @@
-import { Contact } from "../models/contactModels.js";//desc- get all contact
+import { Contact } from "../models/contactModels.js";
+import bcrypt from "bcrypt";
+//desc- get all contact
 //route Get /api/contacts
 //access public
 const getContacts = async(req, res) => {
-    const conatct = await Contact.find();
+    const conatct = await Contact.find({user_id:req.user.id});
     res.status(200).json(conatct);
 };
 
@@ -17,7 +19,12 @@ const createContact = async(req, res) => {
         res.status(400)
         throw new Error("all the fields are mendatory");
     }
-    const contact = await Contact.create(req.body);
+    const contact = await Contact.create({
+        name,
+        email,
+        phone,
+        user_id :req.user.id
+    });
     res.status(200).json({ message: "craeted a contact" });
 };
 
