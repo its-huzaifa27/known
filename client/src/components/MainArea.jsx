@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useDashboard } from '../context/DashboardContext';
+import { useAuth } from '../context/AuthContext';
+import { useState,useEffect } from 'react';
+import axios from 'axios';
 
 function MainArea() {
+  const { token, logout } = useAuth();
   const { activeView, setActiveView } = useDashboard();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,11 @@ function MainArea() {
   const [groupFormData, setGroupFormData] = useState({ name: '', contacts: [] });
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
+  
+  // Bulk Import State
+  const [importPreviewData, setImportPreviewData] = useState([]);
+  const [selectedImportIndices, setSelectedImportIndices] = useState([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleCreateContact = async (e) => {
     e.preventDefault();
@@ -31,7 +38,7 @@ function MainArea() {
 
     try {
       await axios.post('http://localhost:5000/api/contacts/', formData, {
-        headers: { Authorization: "Bearer bypass_test_token_123" }
+        headers: { Authorization: `Bearer ${token}` }
       });
       // Clear form on success
       setFormData({ name: '', email: '', phone: '' });
@@ -39,6 +46,7 @@ function MainArea() {
       setActiveView('MyContacts');
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 401) logout();
       setSubmitError(err.response?.data?.message || "Failed to create contact");
     } finally {
         setSubmitLoading(false);
@@ -62,7 +70,7 @@ function MainArea() {
 
     try {
       await axios.put(`http://localhost:5000/api/contacts/${editingContactId}`, editFormData, {
-        headers: { Authorization: "Bearer bypass_test_token_123" }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setEditingContactId(null);
       setEditFormData({ name: '', email: '', phone: '' });
@@ -79,7 +87,7 @@ function MainArea() {
     try {
       const updatedContact = { ...contact, isFavorite: !contact.isFavorite };
       await axios.put(`http://localhost:5000/api/contacts/${contact._id}`, updatedContact, {
-        headers: { Authorization: "Bearer bypass_test_token_123" }
+        headers: { Authorization: `Bearer ${token}` }
       });
       // Update local state to reflect the change immediately
       setContacts(contacts.map(c => c._id === contact._id ? { ...c, isFavorite: !c.isFavorite } : c));
@@ -92,7 +100,7 @@ function MainArea() {
     if (window.confirm("Are you sure you want to delete this contact?")) {
       try {
         await axios.delete(`http://localhost:5000/api/contacts/${id}`, {
-          headers: { Authorization: "Bearer bypass_test_token_123" }
+          headers: { Authorization: `Bearer ${token}` }
         });
         setContacts(contacts.filter(contact => contact._id !== id));
       } catch (err) {
@@ -113,7 +121,7 @@ function MainArea() {
 
     try {
       await axios.post('http://localhost:5000/api/groups/', groupFormData, {
-        headers: { Authorization: "Bearer bypass_test_token_123" }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setGroupFormData({ name: '', contacts: [] });
       setActiveView('MyGroups');
@@ -129,7 +137,7 @@ function MainArea() {
     if (window.confirm("Are you sure you want to delete this group?")) {
       try {
         await axios.delete(`http://localhost:5000/api/groups/${id}`, {
-          headers: { Authorization: "Bearer bypass_test_token_123" }
+          headers: { Authorization: `Bearer ${token}` }
         });
         setGroups(groups.filter(g => g._id !== id));
       } catch (err) {
@@ -142,16 +150,113 @@ function MainArea() {
     return groups.filter(g => g.contacts.includes(contactId));
   };
 
+  const parseVCF = (content) => {
+    const contacts = [];
+    const vcardBlocks = content.split(/BEGIN:VCARD/i).slice(1);
+    
+    vcardBlocks.forEach(block => {
+      const nameMatch = block.match(/FN:(.*)/i);
+      const emailMatch = block.match(/EMAIL(?:;.*)?:(.*)/i);
+      const telMatch = block.match(/TEL(?:;.*)?:(.*)/i);
+      
+      if (nameMatch || telMatch) {
+        contacts.push({
+          name: nameMatch ? nameMatch[1].trim() : 'Unknown Name',
+          email: emailMatch ? emailMatch[1].trim() : '',
+          phone: telMatch ? telMatch[1].trim().replace(/[^\d+]/g, '') : '',
+          isDuplicate: false
+        });
+      }
+    });
+    return contacts;
+  };
+
+  const parseCSV = (content) => {
+    const lines = content.split('\n');
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    
+    // Find column indices
+    const nameIdx = headers.findIndex(h => h.includes('name'));
+    const phoneIdx = headers.findIndex(h => h.includes('phone') || h.includes('tel') || h.includes('mobile'));
+    const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('mail'));
+
+    return lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim());
+      if (values.length < 2) return null;
+      return {
+        name: nameIdx !== -1 ? values[nameIdx] : 'Unknown',
+        phone: phoneIdx !== -1 ? values[phoneIdx].replace(/[^\d+]/g, '') : '',
+        email: emailIdx !== -1 ? values[emailIdx] : '',
+        isDuplicate: false
+      };
+    }).filter(Boolean);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target.result;
+      let parsedData = [];
+      if (file.name.endsWith('.vcf')) {
+        parsedData = parseVCF(content);
+      } else if (file.name.endsWith('.csv')) {
+        parsedData = parseCSV(content);
+      } else {
+        alert("Unsupported file format. Please use .vcf or .csv");
+        return;
+      }
+
+      // Check for duplicates against existing contacts
+      const updatedData = parsedData.map(newContact => ({
+        ...newContact,
+        isDuplicate: contacts.some(c => c.phone === newContact.phone || (c.email && c.email === newContact.email))
+      }));
+
+      setImportPreviewData(updatedData);
+      setSelectedImportIndices(updatedData.map((_, i) => i)); // Select all by default
+      setActiveView('ImportPreview');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleBulkImport = async () => {
+    const toImport = importPreviewData.filter((_, idx) => selectedImportIndices.includes(idx));
+    if (toImport.length === 0) {
+      alert("Please select at least one contact to import.");
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      await axios.post('http://localhost:5000/api/contacts/bulk', toImport, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh contacts and switch to MyContacts
+      setActiveView('MyContacts');
+    } catch (err) {
+      console.error(err);
+      if (err.response?.status === 401) logout();
+      alert("Failed to import contacts. Please try again.");
+    } finally {
+      setIsImporting(false);
+      setImportPreviewData([]);
+      setSelectedImportIndices([]);
+    }
+  };
+
   useEffect(() => {
     if (activeView === 'MyContacts' || activeView === 'Favorites' || activeView === 'MyGroups') {
       setLoading(true);
       
       const fetchContacts = axios.get('http://localhost:5000/api/contacts/', {
-        headers: { Authorization: "Bearer bypass_test_token_123" }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       const fetchGroups = axios.get('http://localhost:5000/api/groups/', {
-        headers: { Authorization: "Bearer bypass_test_token_123" }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       Promise.all([fetchContacts, fetchGroups])
@@ -162,6 +267,7 @@ function MainArea() {
       })
       .catch(err => {
         console.error(err);
+        if (err.response?.status === 401) logout();
         setError("Failed to fetch data from backend. Ensure your server is running.");
         setLoading(false);
       });
@@ -732,6 +838,129 @@ function MainArea() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : activeView === 'AddContact' ? (
+        <div className="h-full relative z-10 flex items-start justify-center pt-10">
+          <div className="bg-white p-10 rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] w-full max-w-2xl relative overflow-hidden border border-emerald-50 text-center">
+            <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+            
+            <div className="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-600">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+            </div>
+            
+            <h2 className="text-3xl font-extrabold text-slate-800 mb-2">Bulk Import</h2>
+            <p className="text-slate-500 mb-10 max-w-sm mx-auto">Upload a .vcf or .csv file exported from your phone to instantly add your entire contact list.</p>
+
+            <div className="relative group">
+              <input 
+                type="file" 
+                accept=".vcf,.csv"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="border-2 border-dashed border-slate-200 group-hover:border-emerald-400 group-hover:bg-emerald-50/30 rounded-2xl p-12 transition-all duration-300">
+                <p className="text-emerald-600 font-bold text-lg mb-1">Click to browse files</p>
+                <p className="text-slate-400 text-sm italic">Supports .vcf (VCard) and .csv (Excel)</p>
+              </div>
+            </div>
+
+            <div className="mt-10 grid grid-cols-2 gap-4 text-left">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 mb-1">PHONE STANDARD</p>
+                <p className="text-sm font-medium text-slate-700">Best for iPhone/Android backups (.vcf)</p>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 mb-1">POWER USER</p>
+                <p className="text-sm font-medium text-slate-700">Best for Excel/Sheets (.csv)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeView === 'ImportPreview' ? (
+        <div className="h-full relative z-10">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Review & Import</h2>
+              <p className="text-slate-500 font-medium">{importPreviewData.length} contacts found in file</p>
+            </div>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => {
+                  setImportPreviewData([]);
+                  setActiveView('AddContact');
+                }}
+                className="px-6 py-2.5 bg-white border-2 border-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBulkImport}
+                disabled={isImporting || selectedImportIndices.length === 0}
+                className="px-8 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold rounded-xl shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50"
+              >
+                {isImporting ? "Importing..." : `Import ${selectedImportIndices.length} Contacts`}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="p-4 w-12 text-center">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
+                      checked={selectedImportIndices.length === importPreviewData.length}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedImportIndices(importPreviewData.map((_, i) => i));
+                        else setSelectedImportIndices([]);
+                      }}
+                    />
+                  </th>
+                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Info</th>
+                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Phone</th>
+                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {importPreviewData.map((contact, idx) => (
+                  <tr key={idx} className={`hover:bg-slate-50/50 transition-colors ${contact.isDuplicate ? 'bg-amber-50/30' : ''}`}>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
+                        checked={selectedImportIndices.includes(idx)}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedImportIndices([...selectedImportIndices, idx]);
+                          else setSelectedImportIndices(selectedImportIndices.filter(i => i !== idx));
+                        }}
+                      />
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 uppercase">
+                          {contact.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-700">{contact.name}</p>
+                          <p className="text-xs text-slate-400">{contact.email || 'No email'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-slate-600 font-medium">{contact.phone}</td>
+                    <td className="p-4 text-right">
+                      {contact.isDuplicate ? (
+                        <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wide">Duplicate</span>
+                      ) : (
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide">Ready</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : (

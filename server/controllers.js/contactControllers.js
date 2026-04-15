@@ -58,6 +58,27 @@ const deleteContact = async(req, res) => {
 };
 
 
+//desc- bulk create contacts
+//route Post /api/contacts/bulk
+//access private
+const bulkCreateContacts = async(req, res) => {
+    const contacts = req.body; // Expecting an array of contact objects
+    
+    if (!Array.isArray(contacts) || contacts.length === 0) {
+        res.status(400);
+        throw new Error("Invalid bulk data. Expecting a non-empty array.");
+    }
+
+    // Add user_id to each contact
+    const contactsWithUser = contacts.map(contact => ({
+        ...contact,
+        user_id: req.user.id
+    }));
+
+    const result = await Contact.insertMany(contactsWithUser);
+    res.status(201).json({ message: `Successfully imported ${result.length} contacts` });
+};
+
 export {
-    getContacts,getContact, createContact, updateContact, deleteContact
+    getContacts, getContact, createContact, updateContact, deleteContact, bulkCreateContacts
 }

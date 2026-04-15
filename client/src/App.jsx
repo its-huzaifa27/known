@@ -1,17 +1,23 @@
-import { useState } from 'react'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import LandingPage from './components/LandingPage'
-import Header from './components/Header'
 import DashBoard from './components/DashBoard'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+function Root() {
+  const { token } = useAuth();
+  
   return (
     <>
-      {/* <LandingPage /> */}
-      <DashBoard />
+      {token ? <DashBoard /> : <LandingPage />}
     </>
-  )
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Root />
+    </AuthProvider>
+  );
 }
 
 export default App
