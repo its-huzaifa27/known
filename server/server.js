@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import contactRoute from "./routes/contactRoutes.js";
 import usersRoute from "./routes/usersRouter.js";
+import groupRoutes from "./routes/groupRoutes.js";
 import { errorHnadler } from "./middlewares/errorHandler.js";
 import { connectDb } from "./config/dbConnection.js";
 configDotenv();
@@ -24,6 +25,7 @@ const startServer = async() => {
         //routes
         app.use("/api/contacts/", contactRoute);
         app.use("/api/users/", usersRoute);
+        app.use("/api/groups/", groupRoutes);
 
         app.listen(port, () => {
             console.log(`app is running on the ${port}`)

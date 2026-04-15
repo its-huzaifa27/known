@@ -17,6 +17,10 @@ const contactSchema = new mongoose.Schema({
     phone : {
         type : String,
         required : [true ,"please enter phone no "]
+    },
+    isFavorite : {
+        type : Boolean,
+        default : false
     }
 }
 ,
