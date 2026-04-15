@@ -1,85 +1,60 @@
 import { useDashboard } from '../context/DashboardContext';
 import { useAuth } from '../context/AuthContext';
-import { useState,useEffect } from 'react';
+import { useEffect } from 'react';
 import axios from 'axios';
 
 function MainArea() {
   const { token, logout } = useAuth();
-  const { activeView, setActiveView } = useDashboard();
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { activeView, setActiveView, state, dispatch } = useDashboard();
 
-  // Create Contact Form State
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
+  const {
+    contacts, groups, loading, error, searchQuery,
+    formData, submitLoading, submitError,
+    editingContactId, editFormData,
+    groupFormData, groupSearchQuery, selectedGroup,
+    importPreviewData, selectedImportIndices, isImporting
+  } = state;
 
-  // Edit Contact Form State
-  const [editingContactId, setEditingContactId] = useState(null);
-  const [editFormData, setEditFormData] = useState({ name: '', email: '', phone: '' });
-
-  // Groups State
-  const [groups, setGroups] = useState([]);
-  const [groupFormData, setGroupFormData] = useState({ name: '', contacts: [] });
-  const [groupSearchQuery, setGroupSearchQuery] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState(null);
-  
-  // Bulk Import State
-  const [importPreviewData, setImportPreviewData] = useState([]);
-  const [selectedImportIndices, setSelectedImportIndices] = useState([]);
-  const [isImporting, setIsImporting] = useState(false);
 
   const handleCreateContact = async (e) => {
     e.preventDefault();
-    setSubmitLoading(true);
-    setSubmitError(null);
+    dispatch({ type: 'SET_SUBMIT_STATE', loading: true, error: null });
 
     try {
       await axios.post('http://localhost:5000/api/contacts/', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Clear form on success
-      setFormData({ name: '', email: '', phone: '' });
-      // Redirect back to My Contacts to implicitly trigger GET
+      dispatch({ type: 'RESET_FORM', form: 'formData' });
       setActiveView('MyContacts');
     } catch (err) {
       console.error(err);
       if (err.response?.status === 401) logout();
-      setSubmitError(err.response?.data?.message || "Failed to create contact");
+      dispatch({ type: 'SET_SUBMIT_STATE', error: err.response?.data?.message || "Failed to create contact" });
     } finally {
-        setSubmitLoading(false);
+        dispatch({ type: 'SET_SUBMIT_STATE', loading: false });
     }
   };
 
   const startEdit = (contact) => {
-    setEditingContactId(contact._id);
-    setEditFormData({ 
-      name: contact.name, 
-      email: contact.email, 
-      phone: contact.phone 
-    });
+    dispatch({ type: 'START_EDIT', contact });
     setActiveView('EditContact');
   };
 
   const handleUpdateContact = async (e) => {
     e.preventDefault();
-    setSubmitLoading(true);
-    setSubmitError(null);
+    dispatch({ type: 'SET_SUBMIT_STATE', loading: true, error: null });
 
     try {
       await axios.put(`http://localhost:5000/api/contacts/${editingContactId}`, editFormData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setEditingContactId(null);
-      setEditFormData({ name: '', email: '', phone: '' });
+      dispatch({ type: 'RESET_FORM', form: 'editFormData' });
       setActiveView('MyContacts');
     } catch (err) {
       console.error(err);
-      setSubmitError(err.response?.data?.message || "Failed to update contact");
+      dispatch({ type: 'SET_SUBMIT_STATE', error: err.response?.data?.message || "Failed to update contact" });
     } finally {
-      setSubmitLoading(false);
+      dispatch({ type: 'SET_SUBMIT_STATE', loading: false });
     }
   };
 
@@ -89,8 +64,11 @@ function MainArea() {
       await axios.put(`http://localhost:5000/api/contacts/${contact._id}`, updatedContact, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Update local state to reflect the change immediately
-      setContacts(contacts.map(c => c._id === contact._id ? { ...c, isFavorite: !c.isFavorite } : c));
+      dispatch({ 
+        type: 'UPDATE_COLLECTION', 
+        collection: 'contacts', 
+        payload: contacts.map(c => c._id === contact._id ? { ...c, isFavorite: !c.isFavorite } : c) 
+      });
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
     }
@@ -102,7 +80,11 @@ function MainArea() {
         await axios.delete(`http://localhost:5000/api/contacts/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setContacts(contacts.filter(contact => contact._id !== id));
+        dispatch({ 
+          type: 'UPDATE_COLLECTION', 
+          collection: 'contacts', 
+          payload: contacts.filter(contact => contact._id !== id) 
+        });
       } catch (err) {
         console.error("Failed to delete contact:", err);
         alert("Failed to delete contact. Please try again.");
@@ -116,20 +98,19 @@ function MainArea() {
       alert("A group must have at least 2 contacts!");
       return;
     }
-    setSubmitLoading(true);
-    setSubmitError(null);
+    dispatch({ type: 'SET_SUBMIT_STATE', loading: true, error: null });
 
     try {
       await axios.post('http://localhost:5000/api/groups/', groupFormData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setGroupFormData({ name: '', contacts: [] });
+      dispatch({ type: 'RESET_FORM', form: 'groupFormData' });
       setActiveView('MyGroups');
     } catch (err) {
       console.error(err);
-      setSubmitError(err.response?.data?.message || "Failed to create group");
+      dispatch({ type: 'SET_SUBMIT_STATE', error: err.response?.data?.message || "Failed to create group" });
     } finally {
-      setSubmitLoading(false);
+      dispatch({ type: 'SET_SUBMIT_STATE', loading: false });
     }
   };
 
@@ -139,12 +120,17 @@ function MainArea() {
         await axios.delete(`http://localhost:5000/api/groups/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setGroups(groups.filter(g => g._id !== id));
+        dispatch({ 
+          type: 'UPDATE_COLLECTION', 
+          collection: 'groups', 
+          payload: groups.filter(g => g._id !== id) 
+        });
       } catch (err) {
         console.error("Failed to delete group:", err);
       }
     }
   };
+
 
   const getContactGroups = (contactId) => {
     return groups.filter(g => g.contacts.includes(contactId));
@@ -215,8 +201,13 @@ function MainArea() {
         isDuplicate: contacts.some(c => c.phone === newContact.phone || (c.email && c.email === newContact.email))
       }));
 
-      setImportPreviewData(updatedData);
-      setSelectedImportIndices(updatedData.map((_, i) => i)); // Select all by default
+      dispatch({ 
+        type: 'SET_IMPORT_STATE', 
+        payload: {
+          importPreviewData: updatedData,
+          selectedImportIndices: updatedData.map((_, i) => i) // Select all by default
+        }
+      });
       setActiveView('ImportPreview');
     };
     reader.readAsText(file);
@@ -229,7 +220,7 @@ function MainArea() {
       return;
     }
 
-    setIsImporting(true);
+    dispatch({ type: 'SET_IMPORT_STATE', payload: { isImporting: true } });
     try {
       await axios.post('http://localhost:5000/api/contacts/bulk', toImport, {
         headers: { Authorization: `Bearer ${token}` }
@@ -241,38 +232,18 @@ function MainArea() {
       if (err.response?.status === 401) logout();
       alert("Failed to import contacts. Please try again.");
     } finally {
-      setIsImporting(false);
-      setImportPreviewData([]);
-      setSelectedImportIndices([]);
+      dispatch({ 
+        type: 'SET_IMPORT_STATE', 
+        payload: {
+          isImporting: false,
+          importPreviewData: [],
+          selectedImportIndices: []
+        }
+      });
     }
   };
 
-  useEffect(() => {
-    if (activeView === 'MyContacts' || activeView === 'Favorites' || activeView === 'MyGroups') {
-      setLoading(true);
-      
-      const fetchContacts = axios.get('http://localhost:5000/api/contacts/', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
 
-      const fetchGroups = axios.get('http://localhost:5000/api/groups/', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      Promise.all([fetchContacts, fetchGroups])
-      .then(([contactsRes, groupsRes]) => {
-        setContacts(contactsRes.data);
-        setGroups(groupsRes.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        if (err.response?.status === 401) logout();
-        setError("Failed to fetch data from backend. Ensure your server is running.");
-        setLoading(false);
-      });
-    }
-  }, [activeView]);
 
   const filteredContacts = contacts.filter(c => 
     c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -294,7 +265,7 @@ function MainArea() {
                 type="text" 
                 placeholder="Search contacts..." 
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => dispatch({ type: 'SET_SEARCH_QUERY', payload: e.target.value })}
                 className="pl-10 pr-4 py-2 bg-white border border-emerald-100 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 w-64 transition-shadow"
               />
             </div>
@@ -492,7 +463,7 @@ function MainArea() {
                             required 
                             placeholder="e.g. Jane Doe"
                             value={editFormData.name}
-                            onChange={e => setEditFormData({...editFormData, name: e.target.value})}
+                             onChange={e => dispatch({ type: 'UPDATE_FORM', form: 'editFormData', payload: { name: e.target.value } })}
                             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
                         />
                     </div>
@@ -503,7 +474,7 @@ function MainArea() {
                             required 
                             placeholder="jane@example.com"
                             value={editFormData.email}
-                            onChange={e => setEditFormData({...editFormData, email: e.target.value})}
+                             onChange={e => dispatch({ type: 'UPDATE_FORM', form: 'editFormData', payload: { email: e.target.value } })}
                             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
                         />
                     </div>
@@ -514,7 +485,7 @@ function MainArea() {
                             required 
                             placeholder="+1 (555) 000-0000"
                             value={editFormData.phone}
-                            onChange={e => setEditFormData({...editFormData, phone: e.target.value})}
+                             onChange={e => dispatch({ type: 'UPDATE_FORM', form: 'editFormData', payload: { phone: e.target.value } })}
                             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
                         />
                     </div>
@@ -566,7 +537,7 @@ function MainArea() {
                             required 
                             placeholder="e.g. Jane Doe"
                             value={formData.name}
-                            onChange={e => setFormData({...formData, name: e.target.value})}
+                             onChange={e => dispatch({ type: 'UPDATE_FORM', form: 'formData', payload: { name: e.target.value } })}
                             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
                         />
                     </div>
@@ -577,7 +548,7 @@ function MainArea() {
                             required 
                             placeholder="jane@example.com"
                             value={formData.email}
-                            onChange={e => setFormData({...formData, email: e.target.value})}
+                             onChange={e => dispatch({ type: 'UPDATE_FORM', form: 'formData', payload: { email: e.target.value } })}
                             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
                         />
                     </div>
@@ -588,7 +559,7 @@ function MainArea() {
                             required 
                             placeholder="+1 (555) 000-0000"
                             value={formData.phone}
-                            onChange={e => setFormData({...formData, phone: e.target.value})}
+                             onChange={e => dispatch({ type: 'UPDATE_FORM', form: 'formData', payload: { phone: e.target.value } })}
                             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm text-slate-700 font-medium placeholder:font-normal"
                         />
                     </div>
@@ -628,7 +599,7 @@ function MainArea() {
                   type="text" 
                   placeholder="Search groups..." 
                   value={groupSearchQuery}
-                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                   onChange={(e) => dispatch({ type: 'SET_GROUP_SEARCH_QUERY', payload: e.target.value })}
                   className="pl-10 pr-4 py-2 bg-white border border-emerald-100 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 w-64 transition-shadow"
                 />
               </div>
@@ -664,7 +635,7 @@ function MainArea() {
                     <div 
                       className="cursor-pointer group-hover:text-emerald-600 transition-colors flex-1"
                       onClick={() => {
-                        setSelectedGroup(group);
+                          dispatch({ type: 'SET_SELECTED_GROUP', payload: group });
                         setActiveView('GroupDetails');
                       }}
                     >
@@ -674,7 +645,7 @@ function MainArea() {
                     <div className="flex gap-1">
                       <button 
                         onClick={() => {
-                          setSelectedGroup(group);
+                          dispatch({ type: 'SET_SELECTED_GROUP', payload: group });
                           setActiveView('GroupDetails');
                         }}
                         className="p-2 text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
@@ -800,7 +771,7 @@ function MainArea() {
                   required 
                   placeholder="e.g. Work Partners"
                   value={groupFormData.name}
-                  onChange={e => setGroupFormData({...groupFormData, name: e.target.value})}
+                  onChange={e => dispatch({ type: 'UPDATE_FORM', form: 'groupFormData', payload: { name: e.target.value } })}
                   className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
                 />
               </div>
@@ -816,9 +787,17 @@ function MainArea() {
                         checked={groupFormData.contacts.includes(contact._id)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setGroupFormData({...groupFormData, contacts: [...groupFormData.contacts, contact._id]});
+                            dispatch({ 
+                              type: 'UPDATE_FORM', 
+                              form: 'groupFormData', 
+                              payload: { contacts: [...groupFormData.contacts, contact._id] } 
+                            });
                           } else {
-                            setGroupFormData({...groupFormData, contacts: groupFormData.contacts.filter(id => id !== contact._id)});
+                            dispatch({ 
+                              type: 'UPDATE_FORM', 
+                              form: 'groupFormData', 
+                              payload: { contacts: groupFormData.contacts.filter(id => id !== contact._id) } 
+                            });
                           }
                         }}
                       />
@@ -886,8 +865,8 @@ function MainArea() {
             </div>
             <div className="flex gap-4">
               <button 
-                onClick={() => {
-                  setImportPreviewData([]);
+                 onClick={() => {
+                  dispatch({ type: 'SET_IMPORT_STATE', payload: { importPreviewData: [] } });
                   setActiveView('AddContact');
                 }}
                 className="px-6 py-2.5 bg-white border-2 border-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
@@ -914,8 +893,8 @@ function MainArea() {
                       className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
                       checked={selectedImportIndices.length === importPreviewData.length}
                       onChange={(e) => {
-                        if (e.target.checked) setSelectedImportIndices(importPreviewData.map((_, i) => i));
-                        else setSelectedImportIndices([]);
+                        if (e.target.checked) dispatch({ type: 'SET_IMPORT_STATE', payload: { selectedImportIndices: importPreviewData.map((_, i) => i) } });
+                        else dispatch({ type: 'SET_IMPORT_STATE', payload: { selectedImportIndices: [] } });
                       }}
                     />
                   </th>
@@ -933,8 +912,8 @@ function MainArea() {
                         className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
                         checked={selectedImportIndices.includes(idx)}
                         onChange={(e) => {
-                          if (e.target.checked) setSelectedImportIndices([...selectedImportIndices, idx]);
-                          else setSelectedImportIndices(selectedImportIndices.filter(i => i !== idx));
+                          if (e.target.checked) dispatch({ type: 'SET_IMPORT_STATE', payload: { selectedImportIndices: [...selectedImportIndices, idx] } });
+                          else dispatch({ type: 'SET_IMPORT_STATE', payload: { selectedImportIndices: selectedImportIndices.filter(i => i !== idx) } });
                         }}
                       />
                     </td>
