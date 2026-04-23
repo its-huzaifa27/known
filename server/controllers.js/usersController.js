@@ -89,9 +89,31 @@ const currentUser = async (req, res) => {
     res.status(200).json(req.user);
 }
 
+const changePassword = expressAsyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+        res.status(400);
+        throw new Error("All fields are mandatory");
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (user && (await bcrypt.compare(currentPassword, user.password))) {
+        const hashPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashPassword;
+        await user.save();
+        res.status(200).json({ message: "Password changed successfully" });
+    } else {
+        res.status(401);
+        throw new Error("Current password is incorrect");
+    }
+});
+
 
 export {
     registerUser,
     loginUser,
-    currentUser
+    currentUser,
+    changePassword
 }

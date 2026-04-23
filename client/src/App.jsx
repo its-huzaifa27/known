@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import LandingPage from './components/LandingPage'
 import DashBoard from './components/DashBoard'
 
@@ -15,7 +16,9 @@ function Root() {
 function App() {
   return (
     <AuthProvider>
-      <Root />
+      <ThemeProvider>
+        <Root />
+      </ThemeProvider>
     </AuthProvider>
   );
 }

@@ -1,14 +1,26 @@
-import React, { createContext, useState, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 import { API_URL } from '../constants';
 
+const DashboardStateContext = createContext();
+const DashboardDispatchContext = createContext();
 
-const DashboardContext = createContext();
+export const useDashboard = () => {
+  const state = useContext(DashboardStateContext);
+  const dispatch = useContext(DashboardDispatchContext);
+  if (state === undefined || dispatch === undefined) {
+    throw new Error('useDashboard must be used within a DashboardProvider');
+  }
+  return { ...state, dispatch };
+};
 
-export const useDashboard = () => useContext(DashboardContext);
+// Also export separate hooks for finer control
+export const useDashboardState = () => useContext(DashboardStateContext);
+export const useDashboardDispatch = () => useContext(DashboardDispatchContext);
 
 const initialState = {
+  activeView: 'MyContacts',
   contacts: [],
   groups: [],
   loading: false,
@@ -25,10 +37,16 @@ const initialState = {
   importPreviewData: [],
   selectedImportIndices: [],
   isImporting: false,
+  // Settings state
+  passwords: { currentPassword: '', newPassword: '', confirmPassword: '' },
+  pwdLoading: false,
+  pwdMessage: { text: '', type: '' }
 };
 
 function reducer(state, action) {
   switch (action.type) {
+    case 'SET_ACTIVE_VIEW':
+      return { ...state, activeView: action.payload };
     case 'FETCH_START':
       return { ...state, loading: true, error: null };
     case 'FETCH_SUCCESS':
@@ -43,6 +61,12 @@ function reducer(state, action) {
       return { ...state, [action.form]: { ...state[action.form], ...action.payload } };
     case 'SET_SUBMIT_STATE':
       return { ...state, submitLoading: action.loading ?? state.submitLoading, submitError: action.error ?? state.submitError };
+    case 'SET_PWD_STATE':
+      return { 
+        ...state, 
+        pwdLoading: action.loading !== undefined ? action.loading : state.pwdLoading, 
+        pwdMessage: action.message !== undefined ? action.message : state.pwdMessage 
+      };
     case 'START_EDIT':
       return {
         ...state,
@@ -51,7 +75,8 @@ function reducer(state, action) {
           name: action.contact.name, 
           email: action.contact.email, 
           phone: action.contact.phone 
-        }
+        },
+        activeView: 'EditContact'
       };
     case 'SET_SELECTED_GROUP':
       return { ...state, selectedGroup: action.payload };
@@ -63,6 +88,7 @@ function reducer(state, action) {
       if (action.form === 'formData') return { ...state, formData: { name: '', email: '', phone: '' } };
       if (action.form === 'editFormData') return { ...state, editingContactId: null, editFormData: { name: '', email: '', phone: '' } };
       if (action.form === 'groupFormData') return { ...state, groupFormData: { name: '', contacts: [] } };
+      if (action.form === 'passwords') return { ...state, passwords: { currentPassword: '', newPassword: '', confirmPassword: '' } };
       return state;
     default:
       return state;
@@ -71,8 +97,8 @@ function reducer(state, action) {
 
 export const DashboardProvider = ({ children }) => {
   const { token, logout } = useAuth();
-  const [activeView, setActiveView] = useState('MyContacts');
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { activeView } = state;
 
   useEffect(() => {
     if (activeView === 'MyContacts' || activeView === 'Favorites' || activeView === 'MyGroups') {
@@ -98,9 +124,21 @@ export const DashboardProvider = ({ children }) => {
     }
   }, [activeView, token]);
 
+  const setActiveView = useCallback((view) => {
+    dispatch({ type: 'SET_ACTIVE_VIEW', payload: view });
+  }, []);
+
+  const stateValue = useMemo(() => ({
+    ...state,
+    setActiveView
+  }), [state, setActiveView]);
+
   return (
-    <DashboardContext.Provider value={{ activeView, setActiveView, state, dispatch }}>
-      {children}
-    </DashboardContext.Provider>
+    <DashboardStateContext.Provider value={stateValue}>
+      <DashboardDispatchContext.Provider value={dispatch}>
+        {children}
+      </DashboardDispatchContext.Provider>
+    </DashboardStateContext.Provider>
   );
 };
+

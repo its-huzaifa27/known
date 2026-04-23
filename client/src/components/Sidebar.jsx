@@ -1,17 +1,23 @@
-import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { useDashboard } from '../context/DashboardContext';
 
 function Sidebar() {
   const { activeView, setActiveView } = useDashboard();
+  const { theme } = useTheme();
 
   const getNavClass = (viewName) => {
+    if (theme === 'dark') {
+      return activeView === viewName
+        ? "flex items-center gap-3 px-5 py-3.5 text-[15px] font-semibold rounded-xl bg-emerald-900/40 text-emerald-100 shadow-inner border border-emerald-700/50 cursor-pointer transform transition-all duration-200"
+        : "flex items-center gap-3 px-5 py-3.5 text-[15px] font-medium rounded-xl text-slate-400 hover:bg-slate-800 hover:text-emerald-300 cursor-pointer transform transition-all duration-200 hover:translate-x-1";
+    }
     return activeView === viewName
       ? "flex items-center gap-3 px-5 py-3.5 text-[15px] font-semibold rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50/50 text-emerald-800 shadow-sm border border-emerald-200/50 cursor-pointer transform transition-all duration-200 scale-[1.02]"
       : "flex items-center gap-3 px-5 py-3.5 text-[15px] font-medium rounded-xl text-slate-600 hover:bg-slate-50 hover:text-emerald-700 hover:shadow-sm cursor-pointer transform transition-all duration-200 hover:translate-x-1";
   };
 
   return (
-    <aside className="w-72 bg-white border-r border-slate-200 flex flex-col justify-between py-8 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.05)] z-0">
+    <aside className={`w-72 border-r flex flex-col justify-between py-8 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.05)] z-0 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
       <nav className="flex flex-col gap-2 px-5">
         <div className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-3 px-2">Navigation</div>
         
@@ -39,8 +45,8 @@ function Sidebar() {
 
       <div className="px-5 mt-auto">
         <div className="h-px bg-slate-200 mb-6 w-full"></div>
-        <a href="#" className="flex items-center gap-3 px-5 py-3.5 text-[15px] font-medium rounded-xl text-slate-500 hover:bg-slate-100/80 hover:text-slate-800 transition-colors group">
-          <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-600 group-hover:rotate-45 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        <a onClick={() => setActiveView('Settings')} className={getNavClass('Settings')}>
+          <svg className={`w-5 h-5 ${activeView === 'Settings' ? 'text-emerald-600' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
           Settings
         </a>
       </div>

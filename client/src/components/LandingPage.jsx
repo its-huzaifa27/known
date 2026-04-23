@@ -1,23 +1,44 @@
-import React, { useState } from 'react';
+import React, { useReducer } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../constants';
 
+const initialState = {
+  isLogin: true,
+  email: '',
+  password: '',
+  userName: '',
+  loading: false,
+  error: null,
+  showPassword: false
+};
+
+function authReducer(state, action) {
+  switch (action.type) {
+    case 'TOGGLE_AUTH_MODE':
+      return { ...state, isLogin: !state.isLogin, error: null };
+    case 'SET_FIELD':
+      return { ...state, [action.field]: action.value };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, loading: false };
+    case 'TOGGLE_PASSWORD':
+      return { ...state, showPassword: !state.showPassword };
+    default:
+      return state;
+  }
+}
 
 function LandingPage() {
   const { login } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [userName, setUserName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
+  const [state, dispatch] = useReducer(authReducer, initialState);
+  const { isLogin, email, password, userName, loading, error, showPassword } = state;
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
 
     const url = isLogin 
       ? `${API_URL}/api/users/login` 
@@ -33,9 +54,9 @@ function LandingPage() {
       login(accessToken, user);
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || 'Authentication failed. Please check your credentials.');
+      dispatch({ type: 'SET_ERROR', payload: err.response?.data?.message || 'Authentication failed. Please check your credentials.' });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
@@ -53,7 +74,7 @@ function LandingPage() {
         <p className="text-[15px] text-slate-500 mb-8">
           {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
           <button 
-            onClick={() => { setIsLogin(!isLogin); setError(null); }}
+            onClick={() => dispatch({ type: 'TOGGLE_AUTH_MODE' })}
             className="text-emerald-700 font-bold hover:underline"
           >
             {isLogin ? 'Sign Up' : 'Log In'}
@@ -78,7 +99,7 @@ function LandingPage() {
                 placeholder="e.g. Jane Doe"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[15px] transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent font-medium" 
                 value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'userName', value: e.target.value })}
               />
             </div>
           )}
@@ -92,7 +113,7 @@ function LandingPage() {
               placeholder="jane@example.com"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[15px] transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent font-medium" 
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'email', value: e.target.value })}
             />
           </div>
 
@@ -106,11 +127,11 @@ function LandingPage() {
                 placeholder="••••••••"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[15px] transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent font-medium pr-12" 
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'password', value: e.target.value })}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => dispatch({ type: 'TOGGLE_PASSWORD' })}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-emerald-600 transition-colors focus:outline-none"
                 title={showPassword ? "Hide password" : "Show password"}
               >
