@@ -8,12 +8,8 @@ function Header() {
       <div className="absolute inset-0 bg-black/10 backdrop-blur-sm pointer-events-none"></div>
       
       {/* Left: Logo and App Name */}
-      <div className="flex items-center gap-3 text-2xl font-extrabold text-white tracking-wide relative z-10 cursor-pointer">
-        <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-lg shadow-lg flex items-center justify-center relative overflow-hidden group">
-          <div className="absolute inset-0 bg-white/20 transform rotate-45 translate-y-full group-hover:translate-y-[-150%] transition-transform duration-700"></div>
-          <div className="w-3 h-3 bg-white rounded-full shadow-inner"></div>
-        </div>
-        known
+      <div className="flex items-center relative z-10 cursor-pointer">
+        <img src="/logo/knownlogo.png" alt="Known Logo" className="h-14 w-auto object-contain " />
       </div>
 
       {/* Right: User Info and Logout */}
