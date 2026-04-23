@@ -1,4 +1,4 @@
-import { configDotenv } from "dotenv";
+﻿import { configDotenv } from "dotenv";
 import express from "express";
 import cors from "cors";
 import contactRoute from "./routes/contactRoutes.js";
@@ -18,7 +18,10 @@ const startServer = async() => {
         console.log(process.env.CONNECTION_STRING)
         await connectDb();
         //mandatory to read the body thing in json withoit it it wonnot read anything from the req 
-        app.use(cors())
+        app.use(cors({
+            origin: ["https://known-six.vercel.app", "http://localhost:5173"],
+            credentials: true
+        }));
         app.use(express.json())
         app.use(errorHnadler);
 
@@ -35,4 +38,3 @@ const startServer = async() => {
     }
 }
 startServer();
-

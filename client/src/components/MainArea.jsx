@@ -2,6 +2,8 @@ import { useDashboard } from '../context/DashboardContext';
 import { useAuth } from '../context/AuthContext';
 import { useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../constants';
+
 
 function MainArea() {
   const { token, logout } = useAuth();
@@ -21,7 +23,7 @@ function MainArea() {
     dispatch({ type: 'SET_SUBMIT_STATE', loading: true, error: null });
 
     try {
-      await axios.post('http://localhost:5000/api/contacts/', formData, {
+      await axios.post(`${API_URL}/api/contacts/`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       dispatch({ type: 'RESET_FORM', form: 'formData' });
@@ -45,7 +47,7 @@ function MainArea() {
     dispatch({ type: 'SET_SUBMIT_STATE', loading: true, error: null });
 
     try {
-      await axios.put(`http://localhost:5000/api/contacts/${editingContactId}`, editFormData, {
+      await axios.put(`${API_URL}/api/contacts/${editingContactId}`, editFormData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       dispatch({ type: 'RESET_FORM', form: 'editFormData' });
@@ -61,7 +63,7 @@ function MainArea() {
   const handleToggleFavorite = async (contact) => {
     try {
       const updatedContact = { ...contact, isFavorite: !contact.isFavorite };
-      await axios.put(`http://localhost:5000/api/contacts/${contact._id}`, updatedContact, {
+      await axios.put(`${API_URL}/api/contacts/${contact._id}`, updatedContact, {
         headers: { Authorization: `Bearer ${token}` }
       });
       dispatch({ 
@@ -77,7 +79,7 @@ function MainArea() {
   const handleDeleteContact = async (id) => {
     if (window.confirm("Are you sure you want to delete this contact?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/contacts/${id}`, {
+        await axios.delete(`${API_URL}/api/contacts/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         dispatch({ 
@@ -101,7 +103,7 @@ function MainArea() {
     dispatch({ type: 'SET_SUBMIT_STATE', loading: true, error: null });
 
     try {
-      await axios.post('http://localhost:5000/api/groups/', groupFormData, {
+      await axios.post(`${API_URL}/api/groups/`, groupFormData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       dispatch({ type: 'RESET_FORM', form: 'groupFormData' });
@@ -117,7 +119,7 @@ function MainArea() {
   const handleDeleteGroup = async (id) => {
     if (window.confirm("Are you sure you want to delete this group?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/groups/${id}`, {
+        await axios.delete(`${API_URL}/api/groups/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         dispatch({ 
@@ -222,7 +224,7 @@ function MainArea() {
 
     dispatch({ type: 'SET_IMPORT_STATE', payload: { isImporting: true } });
     try {
-      await axios.post('http://localhost:5000/api/contacts/bulk', toImport, {
+      await axios.post(`${API_URL}/api/contacts/bulk`, toImport, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh contacts and switch to MyContacts

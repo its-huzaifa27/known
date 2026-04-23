@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../constants';
+
 
 function LandingPage() {
   const { login } = useAuth();
@@ -17,8 +19,8 @@ function LandingPage() {
     setError(null);
 
     const url = isLogin 
-      ? 'http://localhost:5000/api/users/login' 
-      : 'http://localhost:5000/api/users/register';
+      ? `${API_URL}/api/users/login` 
+      : `${API_URL}/api/users/register`;
 
     const payload = isLogin 
       ? { email, password } 

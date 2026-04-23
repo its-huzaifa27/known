@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
+import { API_URL } from '../constants';
+
 
 const DashboardContext = createContext();
 
@@ -76,11 +78,11 @@ export const DashboardProvider = ({ children }) => {
     if (activeView === 'MyContacts' || activeView === 'Favorites' || activeView === 'MyGroups') {
       dispatch({ type: 'FETCH_START' });
       
-      const fetchContacts = axios.get('http://localhost:5000/api/contacts/', {
+      const fetchContacts = axios.get(`${API_URL}/api/contacts/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      const fetchGroups = axios.get('http://localhost:5000/api/groups/', {
+      const fetchGroups = axios.get(`${API_URL}/api/groups/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
