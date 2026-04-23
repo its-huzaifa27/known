@@ -143,7 +143,7 @@ function LandingPage() {
             The intelligent way to manage your network.
           </h2>
           <p className="text-[19px] leading-relaxed opacity-80 mb-10 font-medium">
-            Join 10,000+ users who trust known to structure, secure, and grow their professional connections instantly.
+            Join a platform to structure, secure, and grow your professional connections.
           </p>
           
           <div className="grid grid-cols-2 gap-8 mb-10">
