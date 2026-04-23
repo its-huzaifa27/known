@@ -61,6 +61,29 @@ const ContactFormView = ({
                         className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm font-medium placeholder:font-normal ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
                     />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-xs font-bold tracking-widest text-slate-500 mb-2 uppercase">Birthday</label>
+                        <input 
+                            type="date" 
+                            value={formData.birthday}
+                            onChange={e => dispatch({ type: 'UPDATE_FORM', form: formType, payload: { birthday: e.target.value } })}
+                            className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm font-medium ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-bold tracking-widest text-slate-500 mb-2 uppercase">Additional Notes</label>
+                    <textarea 
+                        placeholder="Add some details about this contact..."
+                        rows="3"
+                        value={formData.notes}
+                        onChange={e => dispatch({ type: 'UPDATE_FORM', form: formType, payload: { notes: e.target.value } })}
+                        className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-transparent transition-all shadow-sm font-medium placeholder:font-normal resize-none ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                    ></textarea>
+                </div>
                 
                 <div className="pt-6 flex gap-4">
                     <button 

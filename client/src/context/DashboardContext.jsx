@@ -27,11 +27,11 @@ const initialState = {
   error: null,
   searchQuery: '',
   groupSearchQuery: '',
-  formData: { name: '', email: '', phone: '' },
+  formData: { name: '', email: '', phone: '', birthday: '', notes: '' },
   submitLoading: false,
   submitError: null,
   editingContactId: null,
-  editFormData: { name: '', email: '', phone: '' },
+  editFormData: { name: '', email: '', phone: '', birthday: '', notes: '' },
   groupFormData: { name: '', contacts: [] },
   selectedGroup: null,
   importPreviewData: [],
@@ -74,7 +74,9 @@ function reducer(state, action) {
         editFormData: { 
           name: action.contact.name, 
           email: action.contact.email, 
-          phone: action.contact.phone 
+          phone: action.contact.phone,
+          birthday: action.contact.birthday ? new Date(action.contact.birthday).toISOString().split('T')[0] : '',
+          notes: action.contact.notes || ''
         },
         activeView: 'EditContact'
       };
@@ -85,8 +87,8 @@ function reducer(state, action) {
     case 'UPDATE_COLLECTION':
       return { ...state, [action.collection]: action.payload };
     case 'RESET_FORM':
-      if (action.form === 'formData') return { ...state, formData: { name: '', email: '', phone: '' } };
-      if (action.form === 'editFormData') return { ...state, editingContactId: null, editFormData: { name: '', email: '', phone: '' } };
+      if (action.form === 'formData') return { ...state, formData: { name: '', email: '', phone: '', birthday: '', notes: '' } };
+      if (action.form === 'editFormData') return { ...state, editingContactId: null, editFormData: { name: '', email: '', phone: '', birthday: '', notes: '' } };
       if (action.form === 'groupFormData') return { ...state, groupFormData: { name: '', contacts: [] } };
       if (action.form === 'passwords') return { ...state, passwords: { currentPassword: '', newPassword: '', confirmPassword: '' } };
       return state;

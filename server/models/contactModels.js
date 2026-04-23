@@ -21,6 +21,12 @@ const contactSchema = new mongoose.Schema({
     isFavorite : {
         type : Boolean,
         default : false
+    },
+    birthday: {
+        type: Date
+    },
+    notes: {
+        type: String
     }
 }
 ,

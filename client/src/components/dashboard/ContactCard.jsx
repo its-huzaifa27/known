@@ -60,6 +60,29 @@ const ContactCard = ({
           <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
           <span className="text-sm font-medium">{contact.phone}</span>
         </div>
+        
+        {contact.birthday && (
+          <div className={`flex items-center gap-3 p-2 rounded-xl border ${
+            new Date(contact.birthday).getDate() === new Date().getDate() && 
+            new Date(contact.birthday).getMonth() === new Date().getMonth()
+            ? (theme === 'dark' ? 'bg-amber-900/20 border-amber-500/30 text-amber-400' : 'bg-amber-50 border-amber-100 text-amber-700')
+            : 'text-slate-500 border-transparent'
+          }`}>
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 01-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9V9a2 2 0 00-2-2M6 12V9a2 2 0 002-2h8" /></svg>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              {new Date(contact.birthday).getDate() === new Date().getDate() && 
+               new Date(contact.birthday).getMonth() === new Date().getMonth() 
+               ? "Birthday Today! 🎂" 
+               : new Date(contact.birthday).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+        )}
+
+        {contact.notes && (
+          <div className={`mt-3 p-3 rounded-xl border text-xs leading-relaxed ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700/50 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
+            <p className="line-clamp-2">{contact.notes}</p>
+          </div>
+        )}
       </div>
     </div>
   );
